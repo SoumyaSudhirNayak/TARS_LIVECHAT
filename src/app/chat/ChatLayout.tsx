@@ -102,10 +102,10 @@ function Sidebar() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && isClerkUserLoaded && clerkUser) {
       const email = clerkUser.primaryEmailAddress?.emailAddress ?? "";
-      const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ");
+      const fullName = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ");
       const imageUrl = clerkUser.imageUrl ?? "";
       void syncFromClerk({
-        name: name || clerkUser.username || email || "Unknown",
+        name: clerkUser.username || fullName || email || "Unknown",
         email,
         imageUrl,
       });
@@ -138,7 +138,6 @@ function Sidebar() {
       <div className="flex items-center justify-between gap-3 p-4">
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">{me?.name ?? "Chat"}</div>
-          <div className="truncate text-xs text-muted-foreground">{me?.email ?? ""}</div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -312,7 +311,6 @@ function Sidebar() {
                   </div>
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{u.name}</div>
-                    <div className="truncate text-xs text-muted-foreground">{u.email}</div>
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-2">

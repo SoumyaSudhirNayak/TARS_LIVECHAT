@@ -54,7 +54,11 @@ export const syncFromClerk = mutation({
 
     const now = Date.now();
     const name =
-      args.name ?? identity.name ?? identity.nickname ?? identity.givenName ?? "Unknown";
+      args.name ??
+      identity.nickname ??
+      identity.name ??
+      identity.givenName ??
+      "Unknown";
     const email = args.email ?? identity.email ?? "";
     const imageUrl = args.imageUrl ?? identity.pictureUrl ?? "";
 
@@ -108,7 +112,11 @@ export const upsertUser = mutation({
     }
 
     const email = identity.email ?? "";
-    const name = identity.name ?? identity.nickname ?? identity.givenName ?? "Unknown";
+    const name =
+      identity.nickname ??
+      identity.name ??
+      identity.givenName ??
+      "Unknown";
     const imageUrl = identity.pictureUrl ?? "";
 
     const existing = await ctx.db
@@ -155,7 +163,11 @@ export const ensureFromIdentity = mutation({
     }
 
     const email = identity.email ?? "";
-    const name = identity.name ?? identity.nickname ?? identity.givenName ?? "Unknown";
+    const name =
+      identity.nickname ??
+      identity.name ??
+      identity.givenName ??
+      "Unknown";
     const imageUrl = identity.pictureUrl ?? "";
 
     const existing = await ctx.db
@@ -205,7 +217,11 @@ export const heartbeat = mutation({
 
     const now = Date.now();
     const email = identity.email ?? "";
-    const name = identity.name ?? identity.nickname ?? identity.givenName ?? "Unknown";
+    const name =
+      identity.nickname ??
+      identity.name ??
+      identity.givenName ??
+      "Unknown";
     const imageUrl = identity.pictureUrl ?? "";
 
     if (!existing) {

@@ -78,7 +78,7 @@ http.route({
 
       await ctx.runMutation(internal.users.upsertFromClerk, {
         clerkId,
-        name: name || username || email || "Unknown",
+        name: username || name || email || "Unknown",
         email,
         imageUrl,
       });
