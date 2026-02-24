@@ -74,6 +74,7 @@ export default function ChatThread({ conversationId }: { conversationId: string 
   const [draft, setDraft] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
   const [retryBody, setRetryBody] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [lastSeenMessageCount, setLastSeenMessageCount] = useState(0);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
@@ -165,7 +166,7 @@ export default function ChatThread({ conversationId }: { conversationId: string 
               )}
             </div>
             <div className="truncate text-xs text-muted-foreground">
-              {typingLabel ?? subtitle}
+              {subtitle}
             </div>
           </div>
         </div>
@@ -401,6 +402,19 @@ export default function ChatThread({ conversationId }: { conversationId: string 
                   </div>
                 );
               })}
+
+              {typingLabel ? (
+                <div className="mt-3 flex justify-start">
+                  <div className="inline-flex items-center gap-2 rounded-2xl bg-muted px-3 py-2 text-xs text-muted-foreground">
+                    <span className="truncate max-w-[160px]">{typingLabel}</span>
+                    <span className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/70 animate-bounce" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-delay:0.15s]" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/70 animate-bounce [animation-delay:0.3s]" />
+                    </span>
+                  </div>
+                </div>
+              ) : null}
             </div>
           )}
         </div>
@@ -445,19 +459,23 @@ export default function ChatThread({ conversationId }: { conversationId: string 
           className="flex items-end gap-2"
           onSubmit={async (e) => {
             e.preventDefault();
-            if (!cid || !me) return;
+            if (!cid || !me || isSending) return;
             const body = draft.trim();
             if (!body) return;
-            setDraft("");
             void setTyping({ conversationId: cid, isTyping: false });
+            setIsSending(true);
             try {
               setSendError(null);
               await sendMessage({ conversationId: cid, body });
+              setDraft("");
               scrollToBottom();
             } catch (err) {
               setRetryBody(body);
-              setSendError(err instanceof Error ? err.message : "Failed to send message");
-              setDraft(body);
+              setSendError(
+                err instanceof Error ? err.message : "Failed to send message",
+              );
+            } finally {
+              setIsSending(false);
             }
           }}
         >
@@ -473,8 +491,8 @@ export default function ChatThread({ conversationId }: { conversationId: string 
               }
             }}
           />
-          <Button type="submit" disabled={!draft.trim()}>
-            Send
+          <Button type="submit" disabled={!draft.trim() || isSending}>
+            {isSending ? "Sending…" : "Send"}
           </Button>
         </form>
         </div>
