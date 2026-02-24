@@ -123,7 +123,7 @@ function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-dvh w-full flex-col border-r bg-background md:w-80",
+        "flex h-full w-full flex-col border-r bg-background md:w-80",
         isMobileConversationOpen ? "hidden md:flex" : "flex",
       )}
     >
@@ -290,7 +290,7 @@ function Sidebar() {
             filteredUsers.map((u) => (
               <div
                 key={u._id}
-                className="flex items-center justify-between gap-3 rounded-md px-2 py-2 hover:bg-accent"
+                className="flex items-start justify-between gap-3 rounded-md px-2 py-2 hover:bg-accent"
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <div className="relative">
@@ -307,7 +307,7 @@ function Sidebar() {
                     <div className="truncate text-xs text-muted-foreground">{u.email}</div>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   <Button
                     size="sm"
                     variant={selectedMemberIds.includes(u._id) ? "default" : "secondary"}
@@ -375,16 +375,23 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
         </div>
       </Unauthenticated>
       <Authenticated>
-        <div className="flex h-dvh w-full">
-          <Sidebar />
-          <main
-            className={cn(
-              "flex h-dvh flex-1 flex-col",
-              isMobileConversationOpen ? "flex" : "hidden md:flex",
-            )}
-          >
-            {children}
-          </main>
+        <div className="flex h-dvh w-full flex-col">
+          <header className="flex items-center border-b bg-background px-4 py-3">
+            <div className="text-base font-semibold tracking-tight">
+              TARS Live Chat
+            </div>
+          </header>
+          <div className="flex flex-1">
+            <Sidebar />
+            <main
+              className={cn(
+                "flex h-full flex-1 flex-col",
+                isMobileConversationOpen ? "flex" : "hidden md:flex",
+              )}
+            >
+              {children}
+            </main>
+          </div>
         </div>
       </Authenticated>
     </div>
