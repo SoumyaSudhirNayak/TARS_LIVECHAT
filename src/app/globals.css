@@ -116,6 +116,40 @@
   --sidebar-ring: oklch(0.551 0.027 264.364);
 }
 
+.colorful {
+  --background: oklch(0.985 0.02 90);
+  --foreground: oklch(0.22 0.08 260);
+  --card: oklch(1 0.03 100);
+  --card-foreground: oklch(0.22 0.08 260);
+  --popover: oklch(1 0.03 100);
+  --popover-foreground: oklch(0.22 0.08 260);
+  --primary: oklch(0.7 0.2 250);
+  --primary-foreground: oklch(0.98 0.02 260);
+  --secondary: oklch(0.9 0.16 140);
+  --secondary-foreground: oklch(0.22 0.08 260);
+  --muted: oklch(0.95 0.04 60);
+  --muted-foreground: oklch(0.4 0.06 260);
+  --accent: oklch(0.9 0.14 30);
+  --accent-foreground: oklch(0.22 0.08 260);
+  --destructive: oklch(0.7 0.25 27);
+  --border: oklch(0.9 0.04 260);
+  --input: oklch(0.9 0.04 260);
+  --ring: oklch(0.7 0.14 260);
+  --chart-1: oklch(0.7 0.2 30);
+  --chart-2: oklch(0.65 0.2 130);
+  --chart-3: oklch(0.65 0.2 250);
+  --chart-4: oklch(0.7 0.2 320);
+  --chart-5: oklch(0.7 0.2 80);
+  --sidebar: oklch(0.96 0.04 260);
+  --sidebar-foreground: oklch(0.22 0.08 260);
+  --sidebar-primary: oklch(0.7 0.2 250);
+  --sidebar-primary-foreground: oklch(0.98 0.02 260);
+  --sidebar-accent: oklch(0.9 0.16 140);
+  --sidebar-accent-foreground: oklch(0.22 0.08 260);
+  --sidebar-border: oklch(0.9 0.04 260);
+  --sidebar-ring: oklch(0.7 0.14 260);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { UserButton, useAuth as useClerkAuth, useUser } from "@clerk/nextjs";
 import { AuthLoading, Authenticated, Unauthenticated, useConvexAuth, useMutation, useQuery } from "convex/react";
+import { PaletteIcon } from "lucide-react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,6 +14,13 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { formatMessageTimestamp } from "@/lib/formatTimestamp";
 
@@ -351,6 +359,26 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
   const likelyMissingConvexJwtTemplate =
     isClerkLoaded && isSignedIn && !isConvexLoading && !isConvexAuthenticated;
 
+  const [theme, setTheme] = useState<"light" | "dark" | "colorful">(
+    () => {
+      if (typeof window === "undefined") return "light";
+      const stored = window.localStorage.getItem("tars-theme");
+      if (stored === "light" || stored === "dark" || stored === "colorful") {
+        return stored;
+      }
+      return "light";
+    },
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const root = document.documentElement;
+    root.classList.remove("dark", "colorful");
+    if (theme === "dark") root.classList.add("dark");
+    if (theme === "colorful") root.classList.add("colorful");
+    window.localStorage.setItem("tars-theme", theme);
+  }, [theme]);
+
   return (
     <div className="h-dvh w-full">
       <AuthLoading>
@@ -376,10 +404,47 @@ export default function ChatLayout({ children }: { children: React.ReactNode }) 
       </Unauthenticated>
       <Authenticated>
         <div className="flex h-dvh w-full flex-col">
-          <header className="flex items-center border-b bg-background px-4 py-3">
+          <header className="flex items-center justify-between border-b bg-background px-4 py-3">
             <div className="text-base font-semibold tracking-tight">
               TARS Live Chat
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  type="button"
+                  className="flex items-center gap-2"
+                >
+                  <PaletteIcon className="size-4" />
+                  <span className="hidden text-xs font-medium sm:inline">
+                    {theme === "light"
+                      ? "Light"
+                      : theme === "dark"
+                        ? "Dark"
+                        : "Colorful"}
+                  </span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuRadioGroup
+                  value={theme}
+                  onValueChange={(value) =>
+                    setTheme(value as "light" | "dark" | "colorful")
+                  }
+                >
+                  <DropdownMenuRadioItem value="light">
+                    Light
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="dark">
+                    Dark
+                  </DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="colorful">
+                    Colorful
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </header>
           <div className="flex flex-1">
             <Sidebar />

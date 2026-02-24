@@ -284,7 +284,10 @@ export const getUsers = query({
     const term = (args.searchTerm ?? "").trim().toLowerCase();
     const users = await ctx.db.query("users").withIndex("by_name").collect();
     const others = users.filter(
-      (u) => u._id !== me._id && !(u.name === "Unknown" && !u.email),
+      (u) =>
+        u._id !== me._id &&
+        u.email !== me.email &&
+        !(u.name === "Unknown" && !u.email),
     );
     if (!term) return others;
     return others.filter((u) => u.name.toLowerCase().includes(term));
@@ -306,7 +309,12 @@ export const listOthers = query({
     if (!me) {
       return users.filter((u) => !(u.name === "Unknown" && !u.email));
     }
-    return users.filter((u) => u._id !== me._id && !(u.name === "Unknown" && !u.email));
+    return users.filter(
+      (u) =>
+        u._id !== me._id &&
+        u.email !== me.email &&
+        !(u.name === "Unknown" && !u.email),
+    );
   },
 });
 
