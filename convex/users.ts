@@ -283,7 +283,9 @@ export const getUsers = query({
 
     const term = (args.searchTerm ?? "").trim().toLowerCase();
     const users = await ctx.db.query("users").withIndex("by_name").collect();
-    const others = users.filter((u) => u._id !== me._id);
+    const others = users.filter(
+      (u) => u._id !== me._id && !(u.name === "Unknown" && !u.email),
+    );
     if (!term) return others;
     return others.filter((u) => u.name.toLowerCase().includes(term));
   },
@@ -301,7 +303,40 @@ export const listOthers = query({
       .unique();
 
     const users = await ctx.db.query("users").withIndex("by_name").collect();
-    if (!me) return users;
-    return users.filter((u) => u._id !== me._id);
+    if (!me) {
+      return users.filter((u) => !(u.name === "Unknown" && !u.email));
+    }
+    return users.filter((u) => u._id !== me._id && !(u.name === "Unknown" && !u.email));
+  },
+});
+
+export const updateProfile = mutation({
+  args: {
+    name: v.string(),
+    imageUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_clerkId", (q) => q.eq("clerkId", identity.subject))
+      .unique();
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const name = normalizeName(args.name);
+    const patch: Record<string, unknown> = { name };
+    if (args.imageUrl !== undefined) {
+      patch["imageUrl"] = args.imageUrl.trim();
+    }
+
+    await ctx.db.patch(user._id, patch);
+    return user._id;
   },
 });

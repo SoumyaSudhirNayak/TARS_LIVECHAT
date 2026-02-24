@@ -17,6 +17,36 @@ async function assertMembership(
   return membership;
 }
 
+async function deleteConversationCascade(ctx: MutationCtx, conversationId: Id<"conversations">) {
+  const messages = await ctx.db
+    .query("messages")
+    .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
+    .collect();
+
+  for (const m of messages) {
+    const reactions = await ctx.db
+      .query("messageReactions")
+      .withIndex("by_message", (q) => q.eq("messageId", m._id))
+      .collect();
+    await Promise.all(reactions.map((r) => ctx.db.delete(r._id)));
+    await ctx.db.delete(m._id);
+  }
+
+  const typing = await ctx.db
+    .query("typingIndicators")
+    .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
+    .collect();
+  await Promise.all(typing.map((t) => ctx.db.delete(t._id)));
+
+  const members = await ctx.db
+    .query("conversationMembers")
+    .withIndex("by_conversation", (q) => q.eq("conversationId", conversationId))
+    .collect();
+  await Promise.all(members.map((m) => ctx.db.delete(m._id)));
+
+  await ctx.db.delete(conversationId);
+}
+
 export const findOrCreateConversation = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
@@ -110,6 +140,14 @@ export const getUserConversations = query({
           ? null
           : (users.find((u) => u._id !== me._id) ?? null);
 
+        if (!isGroup) {
+          const placeholder =
+            !otherUser || (otherUser.name === "Unknown" && !otherUser.email);
+          if (placeholder) {
+            return null;
+          }
+        }
+
         const lastMessage = await ctx.db
           .query("messages")
           .withIndex("by_conversation", (q) => q.eq("conversationId", conversation._id))
@@ -185,5 +223,66 @@ export const markAsRead = mutation({
     const membership = await assertMembership(ctx, args.conversationId, me._id);
     await ctx.db.patch(membership._id, { lastReadAt: Date.now() });
     return membership._id;
+  },
+});
+
+export const renameGroup = mutation({
+  args: { conversationId: v.id("conversations"), name: v.string() },
+  handler: async (ctx, args) => {
+    const { user: me } = await getCurrentUserOrThrow(ctx);
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+    const legacyType = (conversation as { type?: string }).type;
+    const isGroup = (conversation.isGroup ?? legacyType === "group") === true;
+    if (!isGroup) throw new Error("Not a group conversation");
+
+    await assertMembership(ctx, args.conversationId, me._id);
+    const name = args.name.trim();
+    if (!name) throw new Error("Group name is required");
+    await ctx.db.patch(args.conversationId, { name });
+    return args.conversationId;
+  },
+});
+
+export const leaveGroup = mutation({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    const { user: me } = await getCurrentUserOrThrow(ctx);
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+    const legacyType = (conversation as { type?: string }).type;
+    const isGroup = (conversation.isGroup ?? legacyType === "group") === true;
+    if (!isGroup) throw new Error("Not a group conversation");
+
+    const membership = await assertMembership(ctx, args.conversationId, me._id);
+    await ctx.db.delete(membership._id);
+
+    const remainingMembers = await ctx.db
+      .query("conversationMembers")
+      .withIndex("by_conversation", (q) => q.eq("conversationId", args.conversationId))
+      .collect();
+
+    if (remainingMembers.length === 0) {
+      await deleteConversationCascade(ctx, args.conversationId);
+      return null;
+    }
+
+    return membership._id;
+  },
+});
+
+export const deleteGroup = mutation({
+  args: { conversationId: v.id("conversations") },
+  handler: async (ctx, args) => {
+    const { user: me } = await getCurrentUserOrThrow(ctx);
+    const conversation = await ctx.db.get(args.conversationId);
+    if (!conversation) throw new Error("Conversation not found");
+    const legacyType = (conversation as { type?: string }).type;
+    const isGroup = (conversation.isGroup ?? legacyType === "group") === true;
+    if (!isGroup) throw new Error("Not a group conversation");
+
+    await assertMembership(ctx, args.conversationId, me._id);
+    await deleteConversationCascade(ctx, args.conversationId);
+    return null;
   },
 });

@@ -56,15 +56,9 @@ export default function ChatThread({ conversationId }: { conversationId: string 
   const deleteMessage = useMutation(api.messages.deleteMessage);
   const toggleReaction = useMutation(api.messages.toggleReaction);
   const ensureFromIdentity = useMutation(api.users.ensureFromIdentity);
-
-  const [draft, setDraft] = useState("");
-  const [sendError, setSendError] = useState<string | null>(null);
-  const [retryBody, setRetryBody] = useState<string | null>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
-  const [lastSeenMessageCount, setLastSeenMessageCount] = useState(0);
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const isAtBottomRef = useRef(true);
-  const typingTimeoutRef = useRef<number | null>(null);
+  const renameGroup = useMutation(api.conversations.renameGroup);
+  const leaveGroup = useMutation(api.conversations.leaveGroup);
+  const deleteGroup = useMutation(api.conversations.deleteGroup);
 
   const conversation = conversationData?.conversation ?? null;
   const otherUser = conversationData?.otherUser ?? null;
@@ -76,6 +70,19 @@ export default function ChatThread({ conversationId }: { conversationId: string 
     : otherUser?.isOnline
       ? "Online"
       : "Offline";
+
+  const [draft, setDraft] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [retryBody, setRetryBody] = useState<string | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [lastSeenMessageCount, setLastSeenMessageCount] = useState(0);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const isAtBottomRef = useRef(true);
+  const typingTimeoutRef = useRef<number | null>(null);
+  const [isEditingGroupName, setIsEditingGroupName] = useState(false);
+  const [groupNameDraft, setGroupNameDraft] = useState(() =>
+    conversation?.isGroup ? conversation.name || "Group chat" : "",
+  );
 
   useEffect(() => {
     if (me === null) void ensureFromIdentity({});
@@ -146,12 +153,97 @@ export default function ChatThread({ conversationId }: { conversationId: string 
             ) : null}
           </div>
           <div className="min-w-0">
-            <div className="truncate text-sm font-semibold">{title}</div>
+            <div className="truncate text-sm font-semibold">
+              {conversation?.isGroup && isEditingGroupName ? (
+                <input
+                  className="w-40 rounded-md border bg-background px-2 py-1 text-xs"
+                  value={groupNameDraft}
+                  onChange={(e) => setGroupNameDraft(e.target.value)}
+                />
+              ) : (
+                title
+              )}
+            </div>
             <div className="truncate text-xs text-muted-foreground">
               {typingLabel ?? subtitle}
             </div>
           </div>
         </div>
+        {conversation?.isGroup ? (
+          <div className="flex items-center gap-2">
+            {isEditingGroupName ? (
+              <>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    setIsEditingGroupName(false);
+                    setGroupNameDraft(conversation.name || "Group chat");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="xs"
+                  type="button"
+                  disabled={!groupNameDraft.trim()}
+                  onClick={async () => {
+                    if (!cid) return;
+                    await renameGroup({
+                      conversationId: cid,
+                      name: groupNameDraft.trim(),
+                    });
+                    setIsEditingGroupName(false);
+                  }}
+                >
+                  Save
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="xs"
+                  variant="outline"
+                  type="button"
+                  onClick={() => {
+                    setGroupNameDraft(conversation.name || "Group chat");
+                    setIsEditingGroupName(true);
+                  }}
+                >
+                  Edit
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="xs" variant="ghost" type="button">
+                      ⋯
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        if (!cid) return;
+                        await leaveGroup({ conversationId: cid });
+                        router.push("/chat");
+                      }}
+                    >
+                      Leave group
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        if (!cid) return;
+                        await deleteGroup({ conversationId: cid });
+                        router.push("/chat");
+                      }}
+                    >
+                      Delete group
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
+        ) : null}
       </div>
 
       <div className="relative flex-1 overflow-hidden">
